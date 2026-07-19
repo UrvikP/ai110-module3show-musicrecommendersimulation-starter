@@ -23,11 +23,20 @@ class UserProfile:
     """
     Represents a user's taste preferences.
     Required by tests/test_recommender.py
+
+    Numeric targets (one per weighted feature) let score_song compute
+    per-feature closeness (1 - |user - song|). mood/genre are categorical;
+    target_tempo_bpm is raw BPM (normalized inside scoring); the other
+    numeric targets are on a 0-1 scale.
     """
-    favorite_genre: str
+    favorite_genre: str          # kept for display/explanations; NOT weighted (preserves variety)
     favorite_mood: str
     target_energy: float
-    likes_acoustic: bool
+    target_valence: float
+    target_tempo_bpm: float
+    target_danceability: float
+    target_acousticness: float   # numeric target used by score_song
+    likes_acoustic: bool = True  # friendly flag; score_song may fall back to this
 
 class Recommender:
     """
