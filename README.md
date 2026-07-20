@@ -75,6 +75,47 @@ In the real world, content platforms like Youtube and Spotify use a mixture of c
                     │   (song, score, why)   │
                     └───────────────────────┘
 
+
+Phase 2:
+
+My algortihm does not care about Genre when it comes to recomendations, atleast its not factored into my algorithm. I did not remove it as songs still need to be classified into genre. I want to avoid giving more weight to one particular preference than the others.
+
+Finalized Algorithm:
+    Stage 1 — score_song(user_prefs, song) → (score, reasons)
+    Judges one song against the taste profile.
+
+    Normalize every feature to a 0–1 scale. Most already are; tempo_bpm is rescaled with (bpm - 60) / (200 - 60), clamped — otherwise its large raw numbers would dominate.
+
+    Per-feature closeness for each numeric feature: closeness = 1 - abs(user_target - song_value) → 1.0 = perfect match, 0.0 = opposite.
+
+    Weighted sum — multiply each closeness by its weight and add them up. Weights sum to 1, so the score lands in [0, 1] (a "percent match"):
+
+    Feature	Weight	Why
+    acousticness	0.25	most disqualifying if wrong for focus
+    energy	0.25	must stay calm/low-arousal
+    tempo_bpm	0.20	pace = intensity (trimmed; correlates w/ energy)
+    valence	0.15	persona tolerant on mood
+    danceability	0.15	least relevant for background listening
+    Categoricals handled separately (can't use abs()): mood adds a small match bonus; genre is carried for display only, weight 0 (variety decision).
+
+    Collect reasons — for each feature that scores high, append a human-readable string ("matches your energy preference") to power explain_recommendation.
+
+    Stage 2 — recommend_songs(user_prefs, songs, k) → list of (song, score, explanation)
+    Turns scores into the final list.
+
+    Score every song via score_song.
+    Sort by score, descending.
+    Variety re-rank — when picking each next song, penalize candidates too similar to ones already chosen (e.g. same artist / near-identical feature vector), so the top-K isn't five clones. Variety lives here, not in scoring.
+    Return top-K with their scores and explanations.
+    The core design principle
+    Scoring judges a song in isolation (stays blind to variety on purpose, protecting match accuracy). Ranking looks at the whole set and injects variety. Keeping them separate is why you don't drop features to force variety.
+
+Some biases:
+- Weights are opinions — the hand-picked weights (acousticness/energy high, valence/danceability low) encode the designer's belief about what matters; the user never chose them, so the scoring favors that bias by design.
+- Correlated features double-count — tempo and energy both measure "calmness," so the mellow-ness axis carries ~0.45 combined and quietly outweighs valence and danceability, even though the weights look balanced.
+- Variety over-rides best match — the ranking's diversity re-rank intentionally demotes some closest-matching songs, so the top result isn't always the true highest score.
+
+
 ---
 
 ## Getting Started
