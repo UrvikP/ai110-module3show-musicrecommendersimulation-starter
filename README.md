@@ -158,12 +158,57 @@ You can add more tests in `tests/test_recommender.py`.
 Paste a sample of your recommender's output here as a text block so a reader can see what it produces:
 
 ```
-# e.g.:
-# User profile: genre=indie, mood=chill, energy=low
-# Recommendations:
-#   1. ...
-#   2. ...
-#   3. ...
+Loaded 20 songs from /Users/urvikpatel/Desktop/ai110-module3show-musicrecommendersimulation-starter/data/songs.csv
+
+Top 5 recommendations for a focused / lofi listener
+===================================================
+
+1. Focus Flow - LoRoom
+   Match score: 1.00  (100%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it closely matches your energy preference
+     - it closely matches your tempo_bpm preference
+     - it closely matches your valence preference
+     - it closely matches your danceability preference
+     - it has the mood you like (focused)
+
+2. Deep Focus - LoRoom
+   Match score: 1.00  (100%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it closely matches your energy preference
+     - it closely matches your tempo_bpm preference
+     - it closely matches your valence preference
+     - it closely matches your danceability preference
+     - it has the mood you like (focused)
+
+3. Slow Morning - Slow Stereo
+   Match score: 0.96  (96%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it closely matches your energy preference
+     - it closely matches your tempo_bpm preference
+     - it closely matches your valence preference
+     - it closely matches your danceability preference
+
+4. Rainy Window Seat - Paper Lanterns
+   Match score: 0.95  (95%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it closely matches your energy preference
+     - it closely matches your tempo_bpm preference
+     - it closely matches your valence preference
+     - it closely matches your danceability preference
+
+5. City Lights Fade - LoRoom
+   Match score: 0.96  (96%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it closely matches your energy preference
+     - it closely matches your tempo_bpm preference
+     - it closely matches your valence preference
+     - it closely matches your danceability preference
 ```
 
 **Screenshot or video** *(optional)*: <!-- Insert a screenshot or demo video link here -->
