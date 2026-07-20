@@ -12,29 +12,91 @@ You will implement the functions in recommender.py:
 from recommender import load_songs, recommend_songs, score_song
 
 
-def main() -> None:
-    songs = load_songs("data/songs.csv") 
+# -- Realistic taste profiles -------------------------------------------------
+# Each is a coherent listener whose numeric targets, mood, and genre agree.
 
-    # "Late-Night Focus Listener" taste profile.
-    # One target per feature that score_song weighs. tempo_bpm is raw BPM
-    # (normalized inside scoring); the other numeric targets are on a 0-1 scale.
-    user_prefs = {
-        "genre": "lofi",          # for display/explanations; not weighted
-        "mood": "focused",        # categorical match bonus
-        "energy": 0.40,           # low-medium, not hyped up
-        "valence": 0.55,          # neutral-calm
-        "tempo_bpm": 82,          # slow-ish
-        "danceability": 0.55,     # background, not a dance track
-        "acousticness": 0.80,     # prefers acoustic/organic sound
-        "likes_acoustic": True,
-    }
+LATE_NIGHT_FOCUS = {
+    "genre": "lofi", "mood": "focused",
+    "energy": 0.40, "valence": 0.55, "tempo_bpm": 82,
+    "danceability": 0.55, "acousticness": 0.80, "likes_acoustic": True,
+}
 
-    recommendations = recommend_songs(user_prefs, songs, k=5)
+HIGH_ENERGY_POP = {
+    "genre": "pop", "mood": "intense",
+    "energy": 0.93, "valence": 0.80, "tempo_bpm": 134,
+    "danceability": 0.88, "acousticness": 0.05, "likes_acoustic": False,
+}
 
-    header = f"Top {len(recommendations)} recommendations for a "
-    header += f"{user_prefs['mood']} / {user_prefs['genre']} listener"
-    print()
-    print(header)
+CHILL_LOFI = {
+    "genre": "lofi", "mood": "chill",
+    "energy": 0.35, "valence": 0.60, "tempo_bpm": 74,
+    "danceability": 0.55, "acousticness": 0.85, "likes_acoustic": True,
+}
+
+DEEP_INTENSE_ROCK = {
+    "genre": "rock", "mood": "intense",
+    "energy": 0.92, "valence": 0.45, "tempo_bpm": 155,
+    "danceability": 0.66, "acousticness": 0.08, "likes_acoustic": False,
+}
+
+# -- Adversarial / edge-case profiles -----------------------------------------
+# Deliberately built to stress or "trick" the scoring logic. See the notes on
+# each for the surprising behavior it's meant to expose.
+
+# CONTRADICTORY: asks for an "intense" mood but calm, quiet numbers. The mood
+# bonus rewards an intense-tagged song even though every numeric target points
+# the opposite way -- exposes that the +0.10 mood bonus can override features.
+CONTRADICTORY_MOOD = {
+    "genre": "ambient", "mood": "intense",
+    "energy": 0.15, "valence": 0.50, "tempo_bpm": 60,
+    "danceability": 0.30, "acousticness": 0.95, "likes_acoustic": True,
+}
+
+# OUT-OF-RANGE: energy/valence pushed past 1.0 and tempo past the clamp ceiling.
+# closeness = 1 - |user - song| can go NEGATIVE when user values exceed [0,1],
+# and the tempo clamp saturates so every song looks equally far on tempo.
+OUT_OF_RANGE = {
+    "genre": "pop", "mood": "happy",
+    "energy": 2.0, "valence": 1.8, "tempo_bpm": 400,
+    "danceability": 0.5, "acousticness": 0.5, "likes_acoustic": True,
+}
+
+# SPARSE: only one feature specified. Missing features are skipped, so the
+# weighted sum uses < 1.0 of total weight -- scores are capped low and the
+# ranking is decided by a single dimension.
+SPARSE_PROFILE = {
+    "mood": "happy",
+    "energy": 0.90,
+}
+
+# ALL-NEUTRAL: every numeric target at 0.5 and a mood no song has. Nothing
+# stands out, so scores bunch together and ties are broken by catalog order --
+# exposes ordering/tie-break bias.
+ALL_NEUTRAL = {
+    "genre": "none", "mood": "nonexistent",
+    "energy": 0.5, "valence": 0.5, "tempo_bpm": 130,
+    "danceability": 0.5, "acousticness": 0.5, "likes_acoustic": True,
+}
+
+# Name -> profile. Comment out any you don't want to run.
+PROFILES = {
+    "Late-Night Focus": LATE_NIGHT_FOCUS,
+    "High-Energy Pop": HIGH_ENERGY_POP,
+    "Chill Lofi": CHILL_LOFI,
+    "Deep Intense Rock": DEEP_INTENSE_ROCK,
+    "[edge] Contradictory Mood": CONTRADICTORY_MOOD,
+    "[edge] Out-of-Range Values": OUT_OF_RANGE,
+    "[edge] Sparse Profile": SPARSE_PROFILE,
+    "[edge] All-Neutral": ALL_NEUTRAL,
+}
+
+
+def print_recommendations(name: str, user_prefs: dict, songs: list, k: int = 5) -> None:
+    """Run the recommender for one profile and print a formatted report."""
+    recommendations = recommend_songs(user_prefs, songs, k=k)
+
+    header = f"{name}  |  Top {len(recommendations)} recommendations"
+    print("\n" + header)
     print("=" * len(header))
 
     for rank, (song, score, _explanation) in enumerate(recommendations, start=1):
@@ -46,6 +108,13 @@ def main() -> None:
         print("   Why this song:")
         for reason in reasons:
             print(f"     - it {reason}")
+
+
+def main() -> None:
+    songs = load_songs("data/songs.csv")
+
+    for name, prefs in PROFILES.items():
+        print_recommendations(name, prefs, songs)
 
     print()
 

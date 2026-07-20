@@ -223,6 +223,125 @@ Use this section to document the experiments you ran. For example:
 - What happened when you added tempo or valence to the score
 - How did your system behave for different types of users
 
+EDGE CASES OUTPUT
+
+[edge] Contradictory Mood  |  Top 5 recommendations
+===================================================
+
+1. Starlit Drift - Orbit Bloom
+   Match score: 0.94  (94%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it closely matches your energy preference
+     - it closely matches your tempo_bpm preference
+     - it closely matches your valence preference
+     - it closely matches your danceability preference
+
+2. Spacewalk Thoughts - Orbit Bloom
+   Match score: 0.92  (92%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it closely matches your energy preference
+     - it closely matches your tempo_bpm preference
+     - it closely matches your valence preference
+     - it closely matches your danceability preference
+
+3. Rainy Window Seat - Paper Lanterns
+   Match score: 0.87  (87%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it is a good fit for your energy preference
+     - it closely matches your tempo_bpm preference
+     - it closely matches your valence preference
+     - it is a good fit for your danceability preference
+
+4. Library Rain - Paper Lanterns
+   Match score: 0.85  (85%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it is a good fit for your energy preference
+     - it closely matches your tempo_bpm preference
+     - it closely matches your valence preference
+     - it is a good fit for your danceability preference
+
+5. Coffee Shop Stories - Slow Stereo
+   Match score: 0.82  (82%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it is a good fit for your energy preference
+     - it is a good fit for your tempo_bpm preference
+     - it is a good fit for your valence preference
+     - it is a good fit for your danceability preference
+
+[edge] Out-of-Range Values  |  Top 5 recommendations
+====================================================
+
+1. Golden Parade - Indigo Parade
+   Match score: 0.45  (45%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it is a good fit for your danceability preference
+     - it has the mood you like (happy)
+
+2. Rooftop Lights - Indigo Parade
+   Match score: 0.45  (45%)
+   Why this song:
+     - it closely matches your acousticness preference
+     - it has the mood you like (happy)
+
+3. Sunrise City - Neon Echo
+   Match score: 0.42  (42%)
+   Why this song:
+     - it is a good fit for your danceability preference
+     - it has the mood you like (happy)
+
+
+[edge] Sparse Profile  |  Top 5 recommendations
+===============================================
+
+1. Sunrise City - Neon Echo
+   Match score: 0.33  (33%)
+   Why this song:
+     - it closely matches your energy preference
+     - it has the mood you like (happy)
+
+2. Rooftop Lights - Indigo Parade
+   Match score: 0.32  (32%)
+   Why this song:
+     - it closely matches your energy preference
+     - it has the mood you like (happy)
+
+3. Electric Sunset - Neon Echo
+   Match score: 0.33  (32%)
+   Why this song:
+     - it closely matches your energy preference
+     - it has the mood you like (happy)
+
+4. Golden Parade - Indigo Parade
+   Match score: 0.31  (31%)
+   Why this song:
+     - it is a good fit for your energy preference
+     - it has the mood you like (happy)
+
+5. Storm Runner - Voltline
+   Match score: 0.25  (25%)
+   Why this song:
+     - it closely matches your energy preference
+
+[edge] All-Neutral  |  Top 5 recommendations
+============================================
+
+1. City Lights Fade - LoRoom
+   Match score: 0.83  (83%)
+   Why this song:
+     - it is a good fit for your acousticness preference
+     - it closely matches your energy preference
+     - it closely matches your valence preference
+     - it closely matches your danceability preference
+
+2. Golden Parade - Indigo Parade
+   Match score: 0.80  (80%)
+
 ---
 
 ## Limitations and Risks
@@ -237,6 +356,26 @@ Examples:
 
 You will go deeper on this in your model card.
 
+The realistic 3 (added)
+High-Energy Pop, Chill Lofi, Deep Intense Rock — coherent profiles where numbers, mood, and genre agree. These just confirm the scorer ranks sensibly.
+The adversarial 4 — and the bug/quirk each reveals
+1. Contradictory Mood (mood: intense but energy 0.15, tempo 60)
+
+Result: top picks are all calm ambient tracks (Starlit Drift, 0.94) and none got the mood bonus.
+What it reveals: the numeric targets won here — but only because your catalog has no calm song tagged "intense." If one existed, the +0.10 mood bonus could vault a jarring track above better numeric matches. The design lets mood and features pull in opposite directions with no consistency check.
+2. Out-of-Range Values (energy: 2.0, valence: 1.8, tempo: 400) — the real bug
+
+Result: scores collapse to ~0.45 and the "percent match" label becomes meaningless.
+What it reveals: closeness = 1 - abs(2.0 - 0.9) = -0.1 goes negative — a song can now subtract from its own score. And tempo 400 saturates the clamp at 1.0, so every song looks identically far on tempo. Nothing validates that inputs are in [0,1].
+3. Sparse Profile (only mood + energy)
+
+Result: max score caps at 0.33, even for a perfect energy match.
+What it reveals: missing features are silently skipped, so only 0.25 (energy weight) + 0.10 (mood) = 0.35 of weight is ever in play. Scores across profiles aren't comparable because the denominator silently changes.
+4. All-Neutral (0.5 everything, mood: nonexistent)
+
+Result: scores bunch tightly (0.80–0.83) and ties break by catalog order.
+What it reveals: the ordering/tie-break bias I flagged earlier — with no distinguishing signal, whichever song appears first in the CSV wins.
+
 ---
 
 ## Reflection
@@ -250,5 +389,7 @@ Write 1 to 2 paragraphs here about what you learned:
 - about how recommenders turn data into predictions
 - about where bias or unfairness could show up in systems like this
 
+I learned about all the preferences/metrics that have to be taken into consideration before predicting the best possible recommendation. Assigning weights to preferences is very important, aslo certain preferances can be very similiar, in this project energy and tempo_bpm basically the same type of metric and this can skew the ratings of the songs. I learned that scoring and ranking are seprate jobs. My intial idea was to score how good a single song is for a user and decide if it should be included in the list all within the same function (I didn't realize I was doing this at first). After asking CLaude.ai for input, it rectified and explained my logic. By seperatign the process, it allowed me to rate the song and then curate a recommendation without sacrificing accuracy.
 
+Bias can show up in any program. My program has only 20 songs, limited data to work with, and as I've learned from AI, I haven't in taken into consideration the full scope of user "Tastes" like lyrics and culture. I guess this could also be a problem for real world companies like Spotify and Youtube where skewed datasets or weights tuned for engagement can shape what millions of people are exposed to.
 
